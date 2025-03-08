@@ -11,56 +11,66 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-// Add an event listener for form submission
+// Listen for form submission
 document.getElementById('mealForm').addEventListener('submit', async function(e) {
   e.preventDefault();
   
-  // Get meal description and date (if needed)
   const mealDesc = document.getElementById('mealDesc').value;
-  const mealDate = document.getElementById('mealDate').value; // not used in this example but available
-
-  // Clear previous results and show loading message
   const resultDiv = document.getElementById('result');
+  
+  // Clear previous results and show a loading message
   resultDiv.innerHTML = "<p>Loading nutrition data...</p>";
 
   try {
-    // Call the serverless function endpoint (ensure the path matches your deployment)
+    // Call your serverless endpoint (adjust URL as needed)
     const response = await fetch('/.netlify/functions/nutrinx', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query: mealDesc })
     });
     
-    const result = await response.json();
+    // Check if response has a valid JSON Content-Type
+    const contentType = response.headers.get("Content-Type") || "";
+    let result;
+    if (contentType.includes("application/json")) {
+      try {
+        result = await response.json();
+      } catch (e) {
+        throw new Error("Invalid JSON response");
+      }
+    } else {
+      // If not JSON, throw an error with the text response for debugging
+      const text = await response.text();
+      throw new Error("Expected JSON but received: " + text);
+    }
     
-    // If an error is returned, display it
+    // Check for errors in the response result
     if (result.error) {
       resultDiv.innerHTML = `<p>Error: ${result.error}</p>`;
       return;
     }
     
-    // Build HTML for aggregated totals
+    // Build aggregated nutrition details
     let html = `<h2>Aggregated Nutrition Data</h2>`;
     html += `<p><strong>Calories:</strong> ${result.totals.nf_calories.toFixed(1)}</p>`;
     html += `<p><strong>Total Fat:</strong> ${result.totals.nf_total_fat.toFixed(1)} g</p>`;
     html += `<p><strong>Carbohydrates:</strong> ${result.totals.nf_total_carbohydrate.toFixed(1)} g</p>`;
     html += `<p><strong>Protein:</strong> ${result.totals.nf_protein.toFixed(1)} g</p>`;
     
-    // Build HTML for individual food items in a table
+    // Build table for individual food items
     html += `<h2>Individual Food Items</h2>`;
-    html += `<table border="1" cellpadding="5" cellspacing="0">
-               <thead>
-                 <tr>
-                   <th>Food Name</th>
-                   <th>Calories</th>
-                   <th>Total Fat (g)</th>
-                   <th>Carbohydrates (g)</th>
-                   <th>Protein (g)</th>
-                 </tr>
-               </thead>
-               <tbody>`;
+    html += `<table>
+              <thead>
+                <tr>
+                  <th>Food Name</th>
+                  <th>Calories</th>
+                  <th>Total Fat (g)</th>
+                  <th>Carbohydrates (g)</th>
+                  <th>Protein (g)</th>
+                </tr>
+              </thead>
+              <tbody>`;
+    
     result.individual.forEach(food => {
       html += `<tr>
                  <td>${food.food_name}</td>
@@ -72,9 +82,11 @@ document.getElementById('mealForm').addEventListener('submit', async function(e)
     });
     html += `</tbody></table>`;
     
-    // Display the final HTML in the result container
+    // Display the HTML in the result container
     resultDiv.innerHTML = html;
+    
   } catch (error) {
+    console.error("Error fetching nutrition data:", error);
     resultDiv.innerHTML = `<p>Error: ${error.message}</p>`;
   }
 });
