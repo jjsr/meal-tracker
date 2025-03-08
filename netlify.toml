@@ -1,1 +1,6 @@
 
+[build]
+  functions = "netlify/functions"
+  publish = "."
+
+# Optionally add settings for build commands if using a static site generator
