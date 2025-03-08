@@ -30,7 +30,38 @@ exports.handler = async function (event, context) {
 
     const data = await response.json();
 
-    // Return the API response
+    // Process the response if a foods array is returned
+    if (Array.isArray(data.foods)) {
+      // Initialize aggregated totals for key nutrients
+      let totals = {
+        nf_calories: 0,
+        nf_total_fat: 0,
+        nf_total_carbohydrate: 0,
+        nf_protein: 0
+        // Add more nutrient fields if needed
+      };
+
+      // Sum up the nutrient values from each food item
+      data.foods.forEach(food => {
+        totals.nf_calories += food.nf_calories || 0;
+        totals.nf_total_fat += food.nf_total_fat || 0;
+        totals.nf_total_carbohydrate += food.nf_total_carbohydrate || 0;
+        totals.nf_protein += food.nf_protein || 0;
+      });
+
+      // Return both aggregated totals and individual food items
+      const result = {
+        totals,
+        individual: data.foods
+      };
+
+      return {
+        statusCode: 200,
+        body: JSON.stringify(result)
+      };
+    }
+
+    // Fallback: Return data as is if no foods array is present
     return {
       statusCode: 200,
       body: JSON.stringify(data)
@@ -43,4 +74,3 @@ exports.handler = async function (event, context) {
     };
   }
 };
-
