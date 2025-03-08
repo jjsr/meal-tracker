@@ -1,6 +1,6 @@
 // Set default date to today
 document.addEventListener('DOMContentLoaded', () => {
-    const dateInput = document.getElementById('date');
+    const dateInput = document.getElementById('mealDate');
     const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are zero-based
