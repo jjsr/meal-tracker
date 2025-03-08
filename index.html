@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Meal Nutrition Tracker</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>Meal Nutrition Tracker</h1>
+  <form id="mealForm">
+    <label for="mealDate">Date:</label>
+    <input type="date" id="mealDate" required>
+    
+    <label for="mealDesc">Meal Description:</label>
+    <textarea id="mealDesc" rows="4" required></textarea>
+    
+    <button type="submit">Submit</button>
+  </form>
+
+  <!-- This container will display the fetched nutrition details -->
+  <div id="result"></div>
+
+  <script src="main.js"></script>
+</body>
+</html>
