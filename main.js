@@ -10,53 +10,71 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-document.getElementById('mealForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
 
-  const date = document.getElementById('mealDate').value;
-  const mealDescription = document.getElementById('mealDesc').value;
+// Add an event listener for form submission
+document.getElementById('mealForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
+  // Get meal description and date (if needed)
+  const mealDesc = document.getElementById('mealDesc').value;
+  const mealDate = document.getElementById('mealDate').value; // not used in this example but available
+
+  // Clear previous results and show loading message
+  const resultDiv = document.getElementById('result');
+  resultDiv.innerHTML = "<p>Loading nutrition data...</p>";
 
   try {
-    // Call your Netlify serverless function. 
-    // Netlify will serve functions at "/.netlify/functions/<functionName>"
-    const response = await fetch('/.netlify/functions/nutritionix', {
+    // Call the serverless function endpoint (ensure the path matches your deployment)
+    const response = await fetch('/.netlify/functions/nutrinx', {
       method: 'POST',
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: mealDescription })
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ query: mealDesc })
     });
     
-    if (!response.ok) {
-      throw new Error("Server error");
+    const result = await response.json();
+    
+    // If an error is returned, display it
+    if (result.error) {
+      resultDiv.innerHTML = `<p>Error: ${result.error}</p>`;
+      return;
     }
     
-    const data = await response.json();
+    // Build HTML for aggregated totals
+    let html = `<h2>Aggregated Nutrition Data</h2>`;
+    html += `<p><strong>Calories:</strong> ${result.totals.nf_calories.toFixed(1)}</p>`;
+    html += `<p><strong>Total Fat:</strong> ${result.totals.nf_total_fat.toFixed(1)} g</p>`;
+    html += `<p><strong>Carbohydrates:</strong> ${result.totals.nf_total_carbohydrate.toFixed(1)} g</p>`;
+    html += `<p><strong>Protein:</strong> ${result.totals.nf_protein.toFixed(1)} g</p>`;
     
-    // Assume the first food item returned contains the nutritional info.
-    const foodItem = data.foods[0];
-    const resultData = {
-      date,
-      meal: mealDescription,
-      kcal: foodItem.nf_calories,
-      protein: foodItem.nf_protein,
-      fat: foodItem.nf_total_fat,
-      carbs: foodItem.nf_total_carbohydrate,
-      fiber: foodItem.nf_dietary_fiber
-    };
-
-    // Update the page with the fetched nutrition details.
-    document.getElementById('result').innerHTML = `
-      <h2>Nutrition Details</h2>
-      <p><strong>Date:</strong> ${resultData.date}</p>
-      <p><strong>Meal:</strong> ${resultData.meal}</p>
-      <p><strong>Kcal:</strong> ${resultData.kcal}</p>
-      <p><strong>Protein:</strong> ${resultData.protein}g</p>
-      <p><strong>Fat:</strong> ${resultData.fat}g</p>
-      <p><strong>Carbs:</strong> ${resultData.carbs}g</p>
-      <p><strong>Fiber:</strong> ${resultData.fiber}g</p>
-    `;
+    // Build HTML for individual food items in a table
+    html += `<h2>Individual Food Items</h2>`;
+    html += `<table border="1" cellpadding="5" cellspacing="0">
+               <thead>
+                 <tr>
+                   <th>Food Name</th>
+                   <th>Calories</th>
+                   <th>Total Fat (g)</th>
+                   <th>Carbohydrates (g)</th>
+                   <th>Protein (g)</th>
+                 </tr>
+               </thead>
+               <tbody>`;
+    result.individual.forEach(food => {
+      html += `<tr>
+                 <td>${food.food_name}</td>
+                 <td>${food.nf_calories.toFixed(1)}</td>
+                 <td>${food.nf_total_fat.toFixed(1)}</td>
+                 <td>${food.nf_total_carbohydrate.toFixed(1)}</td>
+                 <td>${food.nf_protein.toFixed(1)}</td>
+               </tr>`;
+    });
+    html += `</tbody></table>`;
     
+    // Display the final HTML in the result container
+    resultDiv.innerHTML = html;
   } catch (error) {
-    console.error(error);
-    document.getElementById('result').innerText = "An error occurred. Please try again.";
+    resultDiv.innerHTML = `<p>Error: ${error.message}</p>`;
   }
 });
